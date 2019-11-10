@@ -1,0 +1,25 @@
+application:
+  lucene:
+    indexes-root-dir: 'indexes' # default
+logging:
+  level: INFO
+  loggers:
+    "request-error":
+      level: WARN
+      additive: false
+      appenders:
+        - type: file
+          currentLogFilename: ./log/request-error.log
+          archivedLogFilenamePattern: ./log/request-error-%d.log.gz
+          archivedFileCount: 5
+        - type: console
+          threshold: WARN
+          target: stderr
+    "com.alexsmaliy.yesimdb.service.LuceneService":
+      level: DEBUG
+      additive: false
+      appenders:
+        - type: file
+          currentLogFilename: ./log/lucene-service.log
+          archivedLogFilenamePattern: ./log/lucene-service-%d.log.gz
+          archivedFileCount: 5
