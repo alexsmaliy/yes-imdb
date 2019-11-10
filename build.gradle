@@ -1,17 +1,112 @@
 plugins {
+    id 'idea'
     id 'java'
     id 'application'
+    id 'com.github.johnrengelman.shadow' version '5.1.0'
+    id 'org.inferred.processors' version '2.2.0'
+    id 'com.moonlitdoor.git-version' version '0.1.1'
 }
 
 repositories {
     jcenter()
 }
 
-dependencies {
-    implementation 'com.google.guava:guava:28.0-jre'
-    testImplementation 'junit:junit:4.12'
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+project.ext {
+    mainClass = 'com.alexsmaliy.yesimdb.App'
 }
 
 application {
-    mainClassName = 'com.alexsmaliy.yesimdb.App'
+    mainClassName = project.mainClass
+}
+
+dependencies {
+    annotationProcessor group: 'org.immutables',
+            name: 'value',
+            version: '2.7.4'
+    compileOnly group: 'org.immutables',
+            name: 'value',
+            version: '2.7.4'
+    compile group: 'javax.xml.bind',
+            name: 'jaxb-api',
+            version: '2.3.1'
+    compile group: 'io.dropwizard',
+            name: 'dropwizard-hibernate',
+            version: '1.3.13'
+    compile group: 'org.apache.lucene',
+            name: 'lucene-core',
+            version: '8.2.0'
+    compile group: 'org.apache.lucene',
+            name: 'lucene-queryparser',
+            version: '8.2.0'
+    compile group: 'org.apache.lucene',
+            name: 'lucene-analyzers-common',
+            version: '8.2.0'
+    testCompile group: 'junit',
+            name: 'junit',
+            version: '4.12'
+}
+
+jar {
+    archivesBaseName = 'yes-imdb'
+    manifest {
+        attributes 'Main-Class': project.getMainClassName()
+    }
+}
+
+run {
+    args = ['server', '../server.yml']
+}
+
+shadowJar {
+    archiveClassifier.set('sources')
+    from sourceSets.main.allSource
+    manifest {
+        from jar.manifest
+    }
+    version gitVersion
+}
+
+// HAND-CRANKED QUALITY OF LIFE XML ADDITIONS FOR INTELLIJ IDEA .ipr FILE
+
+def getNewHeapSizeNode = { ->
+    new Node(
+            null,
+            'option',
+            [name: 'BUILD_PROCESS_HEAP_SIZE', value: '2048']
+    )
+}
+
+def setHeapSizeConf = { Node compilerConf ->
+    def heapSizeConf = compilerConf.option.find { it.@name == 'BUILD_PROCESS_HEAP_SIZE' }
+    if (heapSizeConf == null) {
+        compilerConf.append(getNewHeapSizeNode())
+    } else {
+        heapSizeConf[0].replaceNode(getNewHeapSizeNode())
+    }
+}
+
+def getNewAnnotationProcessingNode = { ->
+    new Node(null, 'annotationProcessing')
+}
+
+def setAnnotationProcessingConf = { Node compilerConf ->
+    if (!compilerConf.annotationProcessing) {
+        compilerConf.append(getNewAnnotationProcessingNode())
+    }
+    def annotationProcessingNode = compilerConf.annotationProcessing
+    def newAnnotationProcessingNode = getNewAnnotationProcessingNode()
+    annotationProcessingNode[0].replaceNode(newAnnotationProcessingNode)
+    def newProfileNode = new Node(null, 'profile', [default: 'true', name: 'Default', enabled: 'true'])
+    newAnnotationProcessingNode.append(newProfileNode)
+}
+
+idea.project.ipr {
+    withXml { provider ->
+        def compilerConf = provider.node.component.find { it.@name == 'CompilerConfiguration' }
+        setHeapSizeConf compilerConf
+        setAnnotationProcessingConf compilerConf
+    }
 }
