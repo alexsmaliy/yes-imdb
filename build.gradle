@@ -20,6 +20,7 @@ project.ext {
 
 application {
     mainClassName = project.mainClass
+    applicationDefaultJvmArgs = ['-Xms512m', '-Xmx1024m']
 }
 
 dependencies {
@@ -60,7 +61,7 @@ jar {
 }
 
 run {
-    args = ['server', '../server.yml']
+    args = ['server', './server.yml']
 }
 
 shadowJar {
@@ -70,46 +71,4 @@ shadowJar {
         from jar.manifest
     }
     version gitVersion
-}
-
-// HAND-CRANKED QUALITY OF LIFE XML ADDITIONS FOR INTELLIJ IDEA .ipr FILE
-
-def getNewHeapSizeNode = { ->
-    new Node(
-            null,
-            'option',
-            [name: 'BUILD_PROCESS_HEAP_SIZE', value: '2048']
-    )
-}
-
-def setHeapSizeConf = { Node compilerConf ->
-    def heapSizeConf = compilerConf.option.find { it.@name == 'BUILD_PROCESS_HEAP_SIZE' }
-    if (heapSizeConf == null) {
-        compilerConf.append(getNewHeapSizeNode())
-    } else {
-        heapSizeConf[0].replaceNode(getNewHeapSizeNode())
-    }
-}
-
-def getNewAnnotationProcessingNode = { ->
-    new Node(null, 'annotationProcessing')
-}
-
-def setAnnotationProcessingConf = { Node compilerConf ->
-    if (!compilerConf.annotationProcessing) {
-        compilerConf.append(getNewAnnotationProcessingNode())
-    }
-    def annotationProcessingNode = compilerConf.annotationProcessing
-    def newAnnotationProcessingNode = getNewAnnotationProcessingNode()
-    annotationProcessingNode[0].replaceNode(newAnnotationProcessingNode)
-    def newProfileNode = new Node(null, 'profile', [default: 'true', name: 'Default', enabled: 'true'])
-    newAnnotationProcessingNode.append(newProfileNode)
-}
-
-idea.project.ipr {
-    withXml { provider ->
-        def compilerConf = provider.node.component.find { it.@name == 'CompilerConfiguration' }
-        setHeapSizeConf compilerConf
-        setAnnotationProcessingConf compilerConf
-    }
 }
