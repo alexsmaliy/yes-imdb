@@ -1,6 +1,14 @@
 application:
   lucene:
     indexes-root-dir: 'indexes' # default
+    max-results-per-query: 50 # default
+server:
+  applicationConnectors:
+    - type: http
+      port: 8080
+  adminConnectors:
+    - type: http
+      port: 8081
 logging:
   level: INFO
   loggers:
@@ -15,11 +23,11 @@ logging:
         - type: console
           threshold: WARN
           target: stderr
-    "com.alexsmaliy.yesimdb.service.LuceneService":
+    "com.alexsmaliy.yesimdb.service.scraper.ScraperService":
       level: DEBUG
-      additive: false
+      additive: true
       appenders:
         - type: file
-          currentLogFilename: ./log/lucene-service.log
-          archivedLogFilenamePattern: ./log/lucene-service-%d.log.gz
+          currentLogFilename: ./log/scraper-service.log
+          archivedLogFilenamePattern: ./log/scraper-service-%d.log.gz
           archivedFileCount: 5
