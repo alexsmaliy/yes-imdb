@@ -1,30 +1,61 @@
 package com.alexsmaliy.yesimdb.app;
 
+import com.alexsmaliy.yesimdb.config.YesImdbConfiguration;
+import com.alexsmaliy.yesimdb.healthcheck.IndexHealthcheck;
+import com.alexsmaliy.yesimdb.index.Indexes;
 import com.alexsmaliy.yesimdb.index.ManagedIndex;
 import com.alexsmaliy.yesimdb.logging.InvalidDefinitionExceptionMapper;
 import com.alexsmaliy.yesimdb.logging.JsonMappingExceptionMapper;
 import com.alexsmaliy.yesimdb.persistence.LuceneIndexDirManager;
+import com.alexsmaliy.yesimdb.service.scraper.ScraperResource;
+import com.alexsmaliy.yesimdb.service.scraper.ScraperService;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 
 import java.nio.file.Path;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
 
 public class YesImdbApplication extends Application<YesImdbConfiguration> {
-    public static final String PRIMARY_INDEX_NAME = "primary-index";
-    public static final int MAX_RESULTS_TO_RETURN = 5;
-
     public static void main(String[] args) throws Exception {
         new YesImdbApplication().run(args);
     }
 
     @Override
     public void run(YesImdbConfiguration configuration, Environment environment) {
+        /* INITIALIZE DISK PERSISTENCE */
         environment.lifecycle().manage(new LuceneIndexDirManager(configuration));
-        Path indexDirPath = configuration.getApplicationConfiguration().lucene().indexesRootDir();
-        ManagedIndex managedIndex = new ManagedIndex(indexDirPath, PRIMARY_INDEX_NAME);
 
-        /* CUSTOMIZED EXCEPTION HANDLING */
+        /* REQUEST HANDLERS */
+        ThreadFactory tf = new ThreadFactoryBuilder().setDaemon(true)
+            .setNameFormat("crawler")
+            .build();
+        ExecutorService executor = environment.lifecycle()
+            .executorService("crawler", tf)
+            .minThreads(4)
+            .maxThreads(4)
+            .workQueue(new ArrayBlockingQueue<>(1001)) // 1000 movies + 1 admin job
+            .build();
+        Path indexDirPath = configuration.getApplicationConfiguration()
+            .lucene()
+            .indexesRootDir();
+        ManagedIndex primaryIndex = new ManagedIndex(indexDirPath, Indexes.PRIMARY_INDEX_NAME);
+        int maxResultsPerQuery = configuration.getApplicationConfiguration()
+            .lucene()
+            .maxResultsPerQuery();
+        ScraperResource scraperResource =
+            new ScraperService(executor, primaryIndex, maxResultsPerQuery);
+        environment.jersey().register(scraperResource);
+
+        /* APPLICATION HEALTHCHECKS */
+        environment.healthChecks().register(
+            "index-healthcheck",
+            new IndexHealthcheck(primaryIndex));
+
+        /* ADDITIONAL EXCEPTION HANDLING */
         environment.jersey().register(new InvalidDefinitionExceptionMapper());
         environment.jersey().register(new JsonMappingExceptionMapper());
     }

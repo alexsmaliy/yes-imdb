@@ -1,6 +1,6 @@
 package com.alexsmaliy.yesimdb.persistence;
 
-import com.alexsmaliy.yesimdb.app.YesImdbConfiguration;
+import com.alexsmaliy.yesimdb.config.YesImdbConfiguration;
 import io.dropwizard.lifecycle.Managed;
 
 import java.io.IOException;
@@ -40,7 +40,8 @@ public class LuceneIndexDirManager implements Managed {
             }
         }
         if (!Files.isDirectory(indexDir, LinkOption.NOFOLLOW_LINKS) || !Files.isWritable(indexDir)) {
-            throw new RuntimeException("Something already exists at the path configured for Lucene indexes, but is not  writable directory!");
+            throw new RuntimeException("Something already exists at the path configured "
+            + "for Lucene indexes, but is not  writable directory!");
         }
     }
 }

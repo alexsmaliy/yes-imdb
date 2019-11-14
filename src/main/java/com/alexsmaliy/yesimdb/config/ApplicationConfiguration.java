@@ -1,4 +1,4 @@
-package com.alexsmaliy.yesimdb.api;
+package com.alexsmaliy.yesimdb.config;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;

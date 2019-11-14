@@ -1,6 +1,10 @@
 package com.alexsmaliy.yesimdb.index;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import com.google.common.collect.ImmutableMap;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
+import org.apache.lucene.analysis.standard.ClassicAnalyzer;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.SearcherFactory;
@@ -13,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Map;
 
 public class IndexInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexInitializer.class);
@@ -46,8 +51,15 @@ public class IndexInitializer {
     }
 
     private static IndexWriterConfig getIndexWriterConfig() {
-        IndexWriterConfig config = new IndexWriterConfig(new StandardAnalyzer());
+        Analyzer defaultFieldAnalyzer = new WhitespaceAnalyzer();
+        Map<String, Analyzer> fieldToAnalyzerMap = ImmutableMap.<String, Analyzer>builder()
+            .put("name", new NameAnalyzer())
+            .put("title", new ClassicAnalyzer())
+            .build();
+        Analyzer analyzer = new PerFieldAnalyzerWrapper(defaultFieldAnalyzer, fieldToAnalyzerMap);
+        IndexWriterConfig config = new IndexWriterConfig(analyzer);
         config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+        config.setMaxBufferedDocs(50);
         config.setCommitOnClose(true);
         return config;
     }
