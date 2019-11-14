@@ -1,6 +1,6 @@
 package com.alexsmaliy.yesimdb.app;
 
-import com.alexsmaliy.yesimdb.api.ApplicationConfiguration;
+import com.alexsmaliy.yesimdb.config.ApplicationConfiguration;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
 
