@@ -1,7 +1,9 @@
 application:
   lucene:
     indexes-root-dir: 'indexes' # default
-    max-results-per-query: 50 # default
+    max-results-per-query: 100 # default
+  crawler:
+    crawler-threads: 4 # default
 server:
   applicationConnectors:
     - type: http

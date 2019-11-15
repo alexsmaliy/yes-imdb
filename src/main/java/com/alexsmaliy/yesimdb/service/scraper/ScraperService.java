@@ -30,6 +30,7 @@ import javax.ws.rs.ServerErrorException;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -95,6 +96,7 @@ public class ScraperService implements ScraperResource {
                         scoreDoc.doc, e);
                 }
             }
+            Collections.sort(movieResults);
             return movieResults;
         } finally {
             tryReleaseSearcher(searcher);

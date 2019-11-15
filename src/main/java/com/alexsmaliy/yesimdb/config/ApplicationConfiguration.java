@@ -11,4 +11,9 @@ public interface ApplicationConfiguration {
     default LuceneConfiguration lucene() {
         return new ImmutableLuceneConfiguration.Builder().build();
     }
+
+    @Value.Default
+    default CrawlerConfiguration crawler() {
+        return new ImmutableCrawlerConfiguration.Builder().build();
+    }
 }

@@ -20,6 +20,6 @@ public interface LuceneConfiguration {
     @JsonProperty("max-results-per-query")
     @Value.Default
     default int maxResultsPerQuery() {
-        return 50;
+        return 100;
     }
 }

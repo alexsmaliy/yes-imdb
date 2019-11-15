@@ -1,6 +1,7 @@
 package com.alexsmaliy.yesimdb.app;
 
 import com.alexsmaliy.yesimdb.config.YesImdbConfiguration;
+import com.alexsmaliy.yesimdb.healthcheck.DataHealthcheck;
 import com.alexsmaliy.yesimdb.healthcheck.IndexHealthcheck;
 import com.alexsmaliy.yesimdb.index.Indexes;
 import com.alexsmaliy.yesimdb.index.ManagedIndex;
@@ -30,13 +31,16 @@ public class YesImdbApplication extends Application<YesImdbConfiguration> {
         environment.lifecycle().manage(new LuceneIndexDirManager(configuration));
 
         /* REQUEST HANDLERS */
+        int crawlerThreads = configuration.getApplicationConfiguration()
+            .crawler()
+            .crawlerThreads();
         ThreadFactory tf = new ThreadFactoryBuilder().setDaemon(true)
             .setNameFormat("crawler")
             .build();
         ExecutorService executor = environment.lifecycle()
             .executorService("crawler", tf)
-            .minThreads(4)
-            .maxThreads(4)
+            .minThreads(crawlerThreads)
+            .maxThreads(crawlerThreads)
             .workQueue(new ArrayBlockingQueue<>(1001)) // 1000 movies + 1 admin job
             .build();
         Path indexDirPath = configuration.getApplicationConfiguration()
@@ -54,6 +58,9 @@ public class YesImdbApplication extends Application<YesImdbConfiguration> {
         environment.healthChecks().register(
             "index-healthcheck",
             new IndexHealthcheck(primaryIndex));
+        environment.healthChecks().register(
+            "test-query-healthcheck",
+            new DataHealthcheck(scraperResource));
 
         /* ADDITIONAL EXCEPTION HANDLING */
         environment.jersey().register(new InvalidDefinitionExceptionMapper());
